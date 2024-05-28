@@ -4,7 +4,7 @@ hassio_api: true
 homeassistant_api: true
 slug: adsb_mqtt_adsbfi
 name: ADS-B Multi-Portal Sensors (MQTT discovery)
-description: ADS-B sensors - adsb.fr
+description: ADS-B sensors for adsb.fi feeder
 arch:
   - armhf
   - armv7
