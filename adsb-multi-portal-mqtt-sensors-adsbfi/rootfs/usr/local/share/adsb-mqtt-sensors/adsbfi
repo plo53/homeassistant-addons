@@ -1,0 +1,401 @@
+#!/usr/bin/python3
+
+# @plo53 (2024)
+
+# Aircraft   api : file:///run/adsbfi-feed/status.json
+# Statistics api : file:///run/adsbfi-feed/aircraft.json
+
+import logging, json, sys, os, re, asyncio
+import paho.mqtt.client as mqtt
+import paho.mqtt.publish as publish
+from paho.mqtt import MQTTException
+from urllib.request import urlopen
+from math import *
+from datetime import datetime, timedelta
+from ICAOcountry import *
+
+_LOGGER = logging.getLogger(__name__)
+
+CONFIG = {}
+SENSORS = {}
+DEVICE = {"identifiers": "adsbfi", "name": "adsb.fi", "manufacturer": "ADS-B MQTT Sensors", "model":"MultiPortal Feeder Addon", "sw_version":"v1.0 (plo53)"}
+
+ac_cache = []
+
+def def_sensors():
+    sensors = {
+            "adsbfi_uptime":
+                {"name": "Uptime",
+                 "device_class": None,
+                 "icon": "mdi:timer",
+                 "uniq_id": "adsbfi_uptime",
+                 "object_id": "adsbfi_uptime",
+                 "state_topic": "adsbfi/uptime",
+                 "device": DEVICE},
+            "adsbfi_ac_total":
+                {"name": "Aircraft Total",
+                 "device_class": None,
+                 "icon": "mdi:airplane",
+                 "state_class": "measurement",
+                 "unit_of_measurement": "aircraft",
+                 "uniq_id": "adsbfi_ac_total",
+                 "state_topic": "adsbfi/ac_total",
+                 "device": DEVICE},
+            "adsbfi_ac_adsb":
+                {"name": "Aircraft ADS-B ICAO",
+                 "device_class": None,
+                 "icon": "mdi:airplane",
+                 "state_class": "measurement",
+                 "unit_of_measurement": "aircraft",
+                 "uniq_id": "adsbfi_ac_adsb",
+                 "state_topic": "adsbfi/ac_adsb_icao",
+                 "device": DEVICE},
+            "adsbfi_ac_mlat":
+                {"name": "Aircraft MLAT",
+                 "device_class": None,
+                 "icon": "mdi:airplane",
+                 "state_class": "measurement",
+                 "unit_of_measurement": "aircraft",
+                 "uniq_id": "adsbfi_ac_mlat",
+                 "state_topic": "adsbfi/ac_mlat",
+                 "device": DEVICE},
+            "adsbfi_ac_mode_s":
+                {"name": "Aircraft Mode-S",
+                 "device_class": None,
+                 "icon": "mdi:airplane",
+                 "state_class": "measurement",
+                 "unit_of_measurement": "aircraft",
+                 "uniq_id": "adsbfi_ac_mode_s",
+                 "state_topic": "adsbfi/ac_modes",
+                 "device": DEVICE},
+            "adsbfi_ac_with_pos":
+                {"name": "Aircraft w/ Position",
+                 "device_class": None,
+                 "icon": "mdi:airplane",
+                 "state_class": "measurement",
+                 "unit_of_measurement": "aircraft",
+                 "uniq_id": "adsbfi_ac_with_pos",
+                 "state_topic": "adsbfi/ac_w_position",
+                 "device": DEVICE},
+            "adsbfi_ac_without_pos":
+                {"name": "Aircraft w/o Position",
+                 "device_class": None,
+                 "icon": "mdi:airplane",
+                 "state_class": "measurement",
+                 "unit_of_measurement": "aircraft",
+                 "uniq_id": "adsbfi_ac_without_pos",
+                 "state_topic": "adsbfi/ac_wo_position",
+                 "device": DEVICE},
+            "adsbfi_max_range":
+                {"name": "Max Range",
+                 "device_class": None,
+                 "icon": "mdi:map-marker-distance",
+                 "state_class": "measurement",
+                 "unit_of_measurement": "nm",
+                 "uniq_id": "adsbfi_max_range",
+                 "state_topic": "adsbfi/max_range",
+                 "device": DEVICE},
+          }
+    return sensors
+
+
+def mqtt_publish(msgs):
+    try:
+        if CONFIG["mqtt_user"] != None and CONFIG["mqtt_pass"] != None:
+            auth = {'username':CONFIG["mqtt_user"], 'password':CONFIG["mqtt_pass"]}
+        else:
+            auth = None
+        publish.multiple(msgs, hostname=CONFIG["mqtt_host"], port=CONFIG["mqtt_port"], client_id="adsb_mqtt-sensors", auth=auth)
+    except MQTTException as e:
+        _LOGGER.error("Failed sending messages to MQTT broker: {}".format(e))
+        exit(0)
+    except:
+        _LOGGER.exception("Unexpected exception while sending messages to MQTT broker.")
+        exit(0)
+
+
+def get_adsbfi_status():
+    #url =  'file:///run/adsbfi-feed/status.json'
+    url = 'http://f1c878cb-adsb-multi-portal-feeder:8889/stats.json
+    with urlopen(url) as response:
+        try:
+            _LOGGER.info("Getting Adsb.fi feeder statistics ...")
+            data = json.loads(response.read())
+        except json.decoder.JSONDecodeError:
+            _LOGGER.warning("No Adsb.fi feeder statistics found...")
+            return None
+
+    return {"uptime": data["uptime"],
+            "feed_num_ac_adsb_icao": data["aircraft_count_by_type"]["adsb_icao"],
+            "feed_num_ac_mode_s": data["aircraft_count_by_type"]["mode_s"],
+            "feed_num_ac_mlat": data["aircraft_count_by_type"]["mlat"],
+            "feed_num_ac_with_pos": data["aircraft_with_pos"],
+            "feed_num_ac_without_pos": data["aircraft_without_pos"],
+           }
+
+
+def get_adsbfi_aircraft():
+    #url =  'file:///run/adsbexchange-feed/aircraft.json'
+    url = 'http://f1c878cb-adsb-multi-portal-feeder:8889/aircraft.json
+    with urlopen(url) as response:
+        try:
+            _LOGGER.info("Getting Adsb.fi flights information ...")
+            data = json.loads(response.read())
+        except json.decoder.JSONDecodeError:
+            _LOGGER.warning("No Adsb.fi flights information found.")
+            return None
+    return data['aircraft']
+
+
+def format_uptime(uptime):
+    if uptime:
+        s = timedelta(seconds=float(uptime))
+        d = datetime(1,1,1) + s
+        return("%dd %02dh %02dm %02ds" % (d.day-1, d.hour, d.minute, d.second))
+    else:
+        return("%dd %02dh %02dm %02ds" % (0, 0, 0, 0))
+
+
+def get_adsbfi_max_range(aircraft):
+
+    def distance(lat1,lon1,lat2,lon2):
+        dlon = lon2 - lon1
+        dlat = lat2 - lat1
+        a = sin(dlat / 2)**2 + cos(lat1) * cos(lat2) * sin(dlon / 2)**2
+        d = 2 * atan2(sqrt(a), sqrt(1 - a))
+        return d
+
+    R = 6373.0 / 1.852
+
+    ulat=radians(float(CONFIG['mlat_lat']))
+    ulon=radians(float(CONFIG['mlat_lon']))
+
+    dist = {}
+
+    for values in aircraft:
+        icao=values.get('hex')
+        lat=values.get('lat')
+        lon=values.get('lon')
+        if (lat is not None) and (lon is not None):
+            lat=radians(float(lat))
+            lon=radians(float(lon))
+            dist[icao] = distance(ulat,ulon,lat,lon) * R
+
+    sorted_dist=sorted(dist.items(), key=lambda x:x[1], reverse=True)
+
+    if (sorted_dist and ulat != 0 and ulon != 0):
+        return int(sorted_dist[0][1])
+    else:
+        return 0
+
+
+def fill_cache(aircraft):
+    global ac_cache
+    today = datetime.today().day
+    _LOGGER.info("Updating db cache ...")
+    for ac in aircraft:
+        icao=ac.get('hex')
+        if is_int16(icao):
+            generator = ( x for x in ac_cache if x['icao'] == icao and datetime.fromtimestamp(int(x["epoch"])).day == today )
+            found = list(generator)
+            if not found:
+                epoch=datetime.now().timestamp()
+                ac_cache.append({ "icao": icao , "epoch": epoch })
+
+
+def purge_cache():
+    global ac_cache
+    today = datetime.today()
+    to_be_purged = []
+    for ac in ac_cache:
+        icao = ac["icao"]
+        epoch = ac["epoch"]
+        logdate =  datetime.fromtimestamp(epoch)
+        age = today.day - logdate.day
+        if age > 1:
+            to_be_purged.append(ac)
+    _LOGGER.info("Purging db cache: %s outdated" % len(to_be_purged))
+    for ac in to_be_purged:
+        ac_cache.remove(ac)
+
+def get_country_rank(timeslot):
+    global ac_cache
+    if timeslot == "yesterday":
+        when = datetime.today() - timedelta(days=1)
+    else:
+        when = datetime.today()
+    countries = initICAOCountries()
+    sorted_ctry = {}
+    for ac in ac_cache:
+        icao = ac["icao"]
+        epoch = int(ac["epoch"])
+        logdate =  datetime.fromtimestamp(epoch)
+        if logdate.day == when.day:
+            country=findICAOCountry(icao)
+            if country != None : countries[country] += 1
+    sorted_ctry = sorted(countries.items(), key=lambda x:x[1], reverse=True)
+    return sorted_ctry
+
+
+def get_ctry_markdown(baseurl,timeslot,sorted_ctry,top=10):
+    if timeslot == "yesterday":
+        strtime = (datetime.today() - timedelta(days=1)).strftime("%Y-%m-%d")
+        banner = f"#### Yesterday {strtime}\n"
+    else:
+        strtime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        banner = f"#### Today {strtime}\n"
+    ac_tracked = 0
+    ctry_tracked = 0
+    rank = 1
+    msgs = []
+    for x in sorted_ctry:
+        if x[1] != 0:
+            ac_tracked += x[1]
+            ctry_tracked += 1
+    headers  =f"{banner}\n"
+    headers += "---\n"
+    headers += "|   | Rank | Country | Count | Percent |\n"
+    headers += "|:-:|:----:|--------:|------:|--------:|\n"
+    gold   = "<font color='#ffd700'><ha-icon icon='mdi:trophy'></ha-con></font>"
+    silver = "<font color='#c0c0c0'><ha-icon icon='mdi:trophy'></ha-con></font>"
+    bronze = "<font color='#6a5211'><ha-icon icon='mdi:trophy'></ha-con></font>"
+    trophy = [gold,silver,bronze]
+    ranking13 = ""
+    for rank in range(1,4):
+        if sorted_ctry and sorted_ctry[rank-1][1] != 0:
+            p = round((float(sorted_ctry[rank-1][1]) / ac_tracked) * 100., 1)
+            ranking13 += f"|{trophy[rank-1]}|{rank}|{sorted_ctry[rank-1][0]}|{sorted_ctry[rank-1][1]}|{p}%|\n"
+    ranking47 = ""
+    for rank in range(4,top+1):
+        if sorted_ctry and sorted_ctry[rank-1][1] != 0:
+            p = round((float(sorted_ctry[rank-1][1]) / ac_tracked) * 100., 1)
+            ranking47 += f"||{rank}|{sorted_ctry[rank-1][0]}|{sorted_ctry[rank-1][1]}|{p}%|\n"
+    stats  =  "---\n"
+    stats +=  "|statistics of the day|   |\n"
+    stats +=  "|:--------------------|--:|\n"
+    stats += f"|Aircraft tracked| _{ac_tracked}_   |\n"
+    stats += f"|Country tracked | _{ctry_tracked}_ |\n"
+    payload={'state': 'On', 'attributes': headers+ranking13+ranking47+stats }
+    msgs.append({'topic': f'{baseurl}/{timeslot}/markdown', 'payload': json.dumps(payload), 'retain': True})
+    return msgs
+
+
+def is_int16(string):
+    try:
+        int(string,16)
+        return True
+    except ValueError:
+        return False
+
+
+def is_float(string):
+    try:
+        float(string)
+        return True
+    except ValueError:
+        return False
+
+
+def passed_midnight(delta=31):
+    now = datetime.now()
+    ago = now - timedelta(seconds=delta)
+    return now.date() != ago.date()
+
+
+async def main():
+
+    logging.basicConfig(stream=sys.stdout, filemode='w',format='[adsbfi-mqtt-sensors] %(asctime)s | %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
+    #logging.basicConfig(filename='adsbfi-mqtt-sensors.log', filemode='w',format='[adsbfi-mqtt-sensors] %(asctime)s | %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
+
+    CONFIG['mqtt_host'] = os.environ["MQTT_HOST"] if "MQTT_HOST" in os.environ else "homeassistant"
+    CONFIG['mqtt_port'] = os.environ["MQTT_PORT"] if "MQTT_PORT" in os.environ else 1883
+    CONFIG['mqtt_user'] = os.environ["MQTT_USER"] if "MQTT_USER" in os.environ else None
+    CONFIG['mqtt_pass'] = os.environ["MQTT_PASS"] if "MQTT_PASS" in os.environ else None
+    CONFIG['mlat_lat']  = os.environ["MLAT_EXACT_LAT"] if "MLAT_EXACT_LAT" in os.environ else None
+    CONFIG['mlat_lon']  = os.environ["MLAT_EXACT_LON"] if "MLAT_EXACT_LON" in os.environ else None
+
+    _LOGGER.info("MQTT host & credentials (%s,%s,%s,%s)" % (CONFIG['mqtt_host'],CONFIG['mqtt_port'],CONFIG['mqtt_user'],CONFIG['mqtt_pass']))
+
+    if CONFIG["mqtt_user"] == None or CONFIG["mqtt_pass"] == None:
+        _LOGGER.error("MQTT credentials not configured.")
+        exit(0)
+
+    compute_max_range = True
+    compute_ranking = True
+
+    if CONFIG['mlat_lat'] == None or CONFIG['mlat_lon'] == None:
+        compute_max_range = False
+        _LOGGER.warning("MLAT_EXACT_LAT,MLAT_EXACT_LON not configured. Max Range sensor disabled.")
+
+    if (not is_float(CONFIG['mlat_lat'])) or (not is_float(CONFIG['mlat_lon'])):
+        compute_max_range = False
+        _LOGGER.warning("MLAT_EXACT_LAT,MLAT_EXACT_LON not numeric. Max Range sensor disabled.")
+
+    SENSORS = def_sensors()
+
+    first  = True
+
+    while True:
+        if first:
+            msgs = []
+            for k,v in SENSORS.items():
+                msgs.append({'topic': f'homeassistant/sensor/{v["state_topic"]}/config', 'payload': '', 'retain': False})
+            _LOGGER.info("Clearing HA MQTT discovery configuration ...")
+            mqtt_publish(msgs)
+            await asyncio.sleep(1)
+
+            msgs = []
+            for k,v in SENSORS.items():
+                msgs.append({'topic': f'homeassistant/sensor/{v["state_topic"]}/config', 'payload': json.dumps(v), 'retain': True})
+            _LOGGER.info("Setting HA MQTT discovery configuration ...")
+            mqtt_publish(msgs)
+            await asyncio.sleep(1)
+
+            first = False
+
+        msgs = []
+
+        values = get_adsbfi_status()
+
+        if values != None:
+            msgs.append({'topic': "adsbfi/uptime", 'payload': format_uptime(values['uptime']), 'retain': False})
+            feed_num_ac_tracked = values["feed_num_ac_adsb_icao"]+values["feed_num_ac_mode_s"]+values["feed_num_ac_mlat"]
+            msgs.append({'topic': "adsbfi/total", 'payload': feed_num_ac_tracked, 'retain': False})
+            msgs.append({'topic': "adsbfi/adsb", 'payload': values['feed_num_ac_adsb_icao'], 'retain': False})
+            msgs.append({'topic': "adsbfi/modes", 'payload': values['feed_num_ac_mode_s'], 'retain': False})
+            msgs.append({'topic': "adsbfi/mlat", 'payload': values['feed_num_ac_mlat'], 'retain': False})
+            msgs.append({'topic': "adsbfi/position", 'payload': values['feed_num_ac_with_pos'], 'retain': False})
+            msgs.append({'topic': "adsbfi/without", 'payload': values['feed_num_ac_without_pos'], 'retain': False})
+
+
+        if compute_max_range or compute_ranking: aircraft = get_adsbfi_aircraft()
+
+        if compute_max_range:
+            _LOGGER.info("Computing aircraft max range ...")
+            max_range = get_adsbfi_max_range(aircraft)
+        else:
+            max_range = 0
+        msgs.append({'topic': "adsbfi/max_range", 'payload': max_range, 'retain': False})
+
+        if compute_ranking:
+            if passed_midnight():
+                _LOGGER.info("Publishing yesterday countries synopsis ...")
+                yesterday_sorted_ctry = get_country_rank("yesterday")
+                msgs.extend(get_ctry_markdown("adsbfi/countries","yesterday",yesterday_sorted_ctry))
+                _LOGGER.info("Purging db cache ...")
+                purge_cache()
+            fill_cache(aircraft)
+            _LOGGER.info("Computing aircraft countries ranking ...")
+            sorted_ctry = get_country_rank("today")
+            msgs.extend(get_ctry_markdown("adsbfi/countries","today",sorted_ctry))
+
+        if msgs:
+            _LOGGER.info("Updating HA MQTT sensors value ...")
+            mqtt_publish(msgs)
+
+        _LOGGER.info("Sleeping 30 seconds ...")
+        await asyncio.sleep(30)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
