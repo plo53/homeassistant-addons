@@ -3,7 +3,7 @@
 # @plo53 (2024)
 
 # Statistics api : file:///run/adsbfi-feed/status.json
-#                : http://f1c878cb-adsb-multi-portal-feeder:8889/stats.json
+#                : http://f1c878cb-adsb-multi-portal-feeder:8889/status.json
 
 # Aircraft   api : file:///run/adsbfi-feed/aircraft.json
 #                : http://f1c878cb-adsb-multi-portal-feeder:8889/aircraft.json
@@ -119,7 +119,8 @@ def mqtt_publish(msgs):
 
 def get_adsbfi_status():
     #url =  'file:///run/adsbfi-feed/status.json'
-    url = 'http://f1c878cb-adsb-multi-portal-feeder:8889/stats.json'
+    #url = 'http://f1c878cb-adsb-multi-portal-feeder:8889/status.json'
+    url =  'http://' + CONFIG['adsb_feed'] + '/status.json'
     with urlopen(url) as response:
         try:
             _LOGGER.info("Getting Adsb.fi feeder statistics ...")
@@ -139,7 +140,8 @@ def get_adsbfi_status():
 
 def get_adsbfi_aircraft():
     #url =  'file:///run/adsbexchange-feed/aircraft.json'
-    url = 'http://f1c878cb-adsb-multi-portal-feeder:8889/aircraft.json'
+    #url = 'http://f1c878cb-adsb-multi-portal-feeder:8889/aircraft.json'
+    url =  'http://' + CONFIG['adsb_feed'] + '/aircraft.json'
     with urlopen(url) as response:
         try:
             _LOGGER.info("Getting Adsb.fi flights information ...")

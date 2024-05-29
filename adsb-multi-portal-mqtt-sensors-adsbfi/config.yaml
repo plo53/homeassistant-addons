@@ -14,7 +14,7 @@ init: false
 map:
   - data
 options:
-  ADSB_FEEDER_URL: "f1c878cb-adsb-multi-portal-feeder:8754"
+  ADSB_FEEDER_URL: "f1c878cb-adsb-multi-portal-feeder:8889"
   MLAT_EXACT_LAT: ""
   MLAT_EXACT_LON: ""
   MQTT_HOST: "homeassistant"
