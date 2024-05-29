@@ -310,12 +310,21 @@ async def main():
     logging.basicConfig(stream=sys.stdout, filemode='w',format='[adsbfi-mqtt-sensors] %(asctime)s | %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
     #logging.basicConfig(filename='adsbfi-mqtt-sensors.log', filemode='w',format='[adsbfi-mqtt-sensors] %(asctime)s | %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
 
-    CONFIG['mqtt_host'] = os.environ["MQTT_HOST"] if "MQTT_HOST" in os.environ else "homeassistant"
-    CONFIG['mqtt_port'] = os.environ["MQTT_PORT"] if "MQTT_PORT" in os.environ else 1883
-    CONFIG['mqtt_user'] = os.environ["MQTT_USER"] if "MQTT_USER" in os.environ else None
-    CONFIG['mqtt_pass'] = os.environ["MQTT_PASS"] if "MQTT_PASS" in os.environ else None
-    CONFIG['mlat_lat']  = os.environ["MLAT_EXACT_LAT"] if "MLAT_EXACT_LAT" in os.environ else None
-    CONFIG['mlat_lon']  = os.environ["MLAT_EXACT_LON"] if "MLAT_EXACT_LON" in os.environ else None
+    try:
+        f = open('/data/options.json')
+        cfg = json.load(f)
+        f.close()
+    except FileNotFoundError:
+        _LOGGER.error("/data/options.json not found.")
+        exit(0)
+
+    CONFIG['adsb_feed'] = cfg['ADSB_FEEDER_URL'] if "ADSB_FEEDER_URL" in cfg else "f1c878cb-adsb-multi-portal-feeder:8889"
+    CONFIG['mqtt_host'] = cfg['MQTT_HOST'] if "MQTT_HOST" in cfg else "homeassistant"
+    CONFIG['mqtt_port'] = cfg['MQTT_PORT'] if "MQTT_PORT" in os.environ else 1883
+    CONFIG['mqtt_user'] = cfg['MQTT_USER'] if "MQTT_USER" in cfg else None
+    CONFIG['mqtt_pass'] = cfg['MQTT_PASS'] if "MQTT_PASS" in cfg else None
+    CONFIG['mlat_lat']  = cfg['MLAT_EXACT_LAT'] if "MLAT_EXACT_LAT" in cfg else None
+    CONFIG['mlat_lon']  = cfg['MLAT_EXACT_LON'] if "MLAT_EXACT_LON" in cfg else None
 
     _LOGGER.info("MQTT host & credentials (%s,%s,%s,%s)" % (CONFIG['mqtt_host'],CONFIG['mqtt_port'],CONFIG['mqtt_user'],CONFIG['mqtt_pass']))
 
