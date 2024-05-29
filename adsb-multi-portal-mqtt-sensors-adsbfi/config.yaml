@@ -1,4 +1,4 @@
-slug: adsb-multi-portal-sensors-adsbfi
+slug: adsb-multi-portal-mqtt-sensors-adsbfi
 url: https://github.com/plo53/homeassistant-addons/
 image: ghcr.io/plo53/homeassistant-adsb-multi-portal-mqtt-sensors-adsbfi-{arch}
 version: 1.0.0
