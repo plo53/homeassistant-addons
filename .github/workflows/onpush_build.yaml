@@ -12,6 +12,7 @@ on:
       - main
     paths:
       - "**/config.*"
+  workflow_dispatch:
 
 jobs:
   check-addon-changes:
