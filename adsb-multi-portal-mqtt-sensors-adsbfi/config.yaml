@@ -6,11 +6,9 @@ slug: adsb_mqtt_adsbfi
 name: ADS-B Multi-Portal Sensors (MQTT discovery)
 description: ADS-B sensors for adsb.fi feeder
 arch:
-  - armhf
   - armv7
   - aarch64
   - amd64
-  - i386
 init: false
 map:
   - data
