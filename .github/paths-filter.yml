@@ -2,3 +2,4 @@
 # From https://github.com/Poeschl/Hassio-Addons
 # name: slug/filename ; could be slug/config.* for all files
 adsb-multi-portal-mqtt-sensors-adsbfi: adsb-multi-portal-mqtt-sensors-adsbfi/config.* # Image : yes
+adsb-multi-portal-mqtt-sensors-adsbx: adsb-multi-portal-mqtt-sensors-adsbx/config.* # Image : yes
