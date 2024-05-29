@@ -2,8 +2,11 @@
 
 # @plo53 (2024)
 
-# Aircraft   api : file:///run/adsbfi-feed/status.json
-# Statistics api : file:///run/adsbfi-feed/aircraft.json
+# Statistics api : file:///run/adsbfi-feed/status.json
+#                : http://f1c878cb-adsb-multi-portal-feeder:8889/stats.json
+
+# Aircraft   api : file:///run/adsbfi-feed/aircraft.json
+#                : http://f1c878cb-adsb-multi-portal-feeder:8889/aircraft.json
 
 import logging, json, sys, os, re, asyncio
 import paho.mqtt.client as mqtt
