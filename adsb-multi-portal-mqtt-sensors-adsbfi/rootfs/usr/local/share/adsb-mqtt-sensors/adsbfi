@@ -374,12 +374,12 @@ async def main():
         if values != None:
             msgs.append({'topic': "adsbfi/uptime", 'payload': format_uptime(values['uptime']), 'retain': False})
             feed_num_ac_tracked = values["feed_num_ac_adsb_icao"]+values["feed_num_ac_mode_s"]+values["feed_num_ac_mlat"]
-            msgs.append({'topic': "adsbfi/total", 'payload': feed_num_ac_tracked, 'retain': False})
-            msgs.append({'topic': "adsbfi/adsb", 'payload': values['feed_num_ac_adsb_icao'], 'retain': False})
-            msgs.append({'topic': "adsbfi/modes", 'payload': values['feed_num_ac_mode_s'], 'retain': False})
-            msgs.append({'topic': "adsbfi/mlat", 'payload': values['feed_num_ac_mlat'], 'retain': False})
-            msgs.append({'topic': "adsbfi/position", 'payload': values['feed_num_ac_with_pos'], 'retain': False})
-            msgs.append({'topic': "adsbfi/without", 'payload': values['feed_num_ac_without_pos'], 'retain': False})
+            msgs.append({'topic': "adsbfi/ac_total", 'payload': feed_num_ac_tracked, 'retain': False})
+            msgs.append({'topic': "adsbfi/ac_adsb_icao", 'payload': values['feed_num_ac_adsb_icao'], 'retain': False})
+            msgs.append({'topic': "adsbfi/ac_modes", 'payload': values['feed_num_ac_mode_s'], 'retain': False})
+            msgs.append({'topic': "adsbfi/ac_mlat", 'payload': values['feed_num_ac_mlat'], 'retain': False})
+            msgs.append({'topic': "adsbfi/ac_w_position", 'payload': values['feed_num_ac_with_pos'], 'retain': False})
+            msgs.append({'topic': "adsbfi/ac_wo_position", 'payload': values['feed_num_ac_without_pos'], 'retain': False})
 
 
         if compute_max_range or compute_ranking: aircraft = get_adsbfi_aircraft()
