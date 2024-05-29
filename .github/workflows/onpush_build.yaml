@@ -15,6 +15,11 @@ on:
   workflow_dispatch:
 
 jobs:
+  permissions:
+    contents: read
+    packages: write
+    attestations: write
+      
   check-addon-changes:
     runs-on: ubuntu-latest
     outputs:
