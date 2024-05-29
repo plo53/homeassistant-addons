@@ -15,11 +15,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  permissions:
-    contents: read
-    packages: write
-    attestations: write
-      
+
   check-addon-changes:
     runs-on: ubuntu-latest
     outputs:
@@ -51,6 +47,11 @@ jobs:
 #           path: "./${{ matrix.addon }}"
 
   build:
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      
     if: ${{ needs.check-addon-changes.outputs.changedAddons != '[]' }}
     needs: check-addon-changes
     runs-on: ubuntu-latest
