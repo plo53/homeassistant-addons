@@ -6,4 +6,5 @@
 
 #
 
-![aircrafts](https://github.com/plo53/homeassistant-addons/adsb-multi-portal-mqtt-sensors-fr24/main/media/fr24_sensors.png)
+![aircrafts](https://github.com/plo53/homeassistant-addons/blob/main/adsb-multi-portal-mqtt-sensors-fr24/media/fr24_sensors.png)
+![aircrafts](https://github.com/plo53/homeassistant-addons/blob/main/adsb-multi-portal-mqtt-sensors-fr24/media/fr24_countries.png)
