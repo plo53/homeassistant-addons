@@ -2,11 +2,8 @@
 
 # @plo53 (2024)
 
-# Statistics api : file:///run/adsbexchange-feed/status.json
-#                : http://f1c878cb-adsb-multi-portal-feeder:8888/status.json
-
-# Aircraft   api : file:///run/adsbexchange-feed/aircraft.json
-#                : http://f1c878cb-adsb-multi-portal-feeder:8888/aircraft.json
+# Aircraft   REST api : http://url:8754/flights.json
+# Statistics REST api : http://url:8754/monitor.json
 
 import logging, json, sys, os, re, asyncio
 import paho.mqtt.client as mqtt
@@ -21,82 +18,53 @@ _LOGGER = logging.getLogger(__name__)
 
 CONFIG = {}
 SENSORS = {}
-DEVICE = {"identifiers": "adsbx", "name": "ADS-B Exchange", "manufacturer": "ADS-B MQTT Sensors", "model":"MultiPortal Feeder Addon", "sw_version":"v1.0 (plo53)"}
+DEVICE = {"identifiers": "fr24", "name": "Flightradar24 ADS-B", "manufacturer": "ADS-B MQTT Sensors", "model":"MultiPortal Feeder Addon", "sw_version":"v1.0.0 (plo53)"}
 
 ac_cache = []
 
 def def_sensors():
     sensors = {
-            "adsbx_uptime":
-                {"name": "Uptime",
-                 "device_class": None,
-                 "icon": "mdi:timer",
-                 "uniq_id": "adsbx_uptime",
-                 "object_id": "adsbx_uptime",
-                 "state_topic": "adsbexchange/uptime",
+            "fr24_feed":
+                {"name": "Feed Status",
+                 "icon": "mdi:check-network",
+                 "uniq_id": "fr24_feed",
+                 "state_topic": "flightradar24/feed",
                  "device": DEVICE},
-            "adsbx_ac_total":
+            "fr24_ac_total":
                 {"name": "Aircraft Total",
                  "device_class": None,
                  "icon": "mdi:airplane",
                  "state_class": "measurement",
                  "unit_of_measurement": "aircraft",
-                 "uniq_id": "adsbx_ac_total",
-                 "state_topic": "adsbexchange/ac_total",
+                 "uniq_id": "fr24_ac_total",
+                 "state_topic": "flightradar24/ac_total",
                  "device": DEVICE},
-            "adsbx_ac_adsb":
-                {"name": "Aircraft ADS-B ICAO",
+            "fr24_ac_adsb":
+                {"name": "Aircraft ADS-B",
                  "device_class": None,
                  "icon": "mdi:airplane",
                  "state_class": "measurement",
                  "unit_of_measurement": "aircraft",
-                 "uniq_id": "adsbx_ac_adsb",
-                 "state_topic": "adsbexchange/ac_adsb_icao",
+                 "uniq_id": "fr24_ac_adsb",
+                 "state_topic": "flightradar24/ac_adsb",
                  "device": DEVICE},
-            "adsbx_ac_mlat":
-                {"name": "Aircraft MLAT",
+            "fr24_ac_non_adsb":
+                {"name": "Aircraft Non ADS-B",
                  "device_class": None,
                  "icon": "mdi:airplane",
                  "state_class": "measurement",
                  "unit_of_measurement": "aircraft",
-                 "uniq_id": "adsbx_ac_mlat",
-                 "state_topic": "adsbexchange/ac_mlat",
+                 "uniq_id": "fr24_ac_non_adsb",
+                 "state_topic": "flightradar24/ac_non_adsb",
                  "device": DEVICE},
-            "adsbx_ac_mode_s":
-                {"name": "Aircraft Mode-S",
-                 "device_class": None,
-                 "icon": "mdi:airplane",
-                 "state_class": "measurement",
-                 "unit_of_measurement": "aircraft",
-                 "uniq_id": "adsbx_ac_mode_s",
-                 "state_topic": "adsbexchange/ac_modes",
-                 "device": DEVICE},
-            "adsbx_ac_with_pos":
-                {"name": "Aircraft w/ Position",
-                 "device_class": None,
-                 "icon": "mdi:airplane",
-                 "state_class": "measurement",
-                 "unit_of_measurement": "aircraft",
-                 "uniq_id": "adsbx_ac_with_pos",
-                 "state_topic": "adsbexchange/ac_w_position",
-                 "device": DEVICE},
-            "adsbx_ac_without_pos":
-                {"name": "Aircraft w/o Position",
-                 "device_class": None,
-                 "icon": "mdi:airplane",
-                 "state_class": "measurement",
-                 "unit_of_measurement": "aircraft",
-                 "uniq_id": "adsbx_ac_without_pos",
-                 "state_topic": "adsbexchange/ac_wo_position",
-                 "device": DEVICE},
-            "adsbx_max_range":
-                {"name": "Aircraft Max Range",
+            "fr24_max_range":
+                {"name": "Max Range",
                  "device_class": None,
                  "icon": "mdi:map-marker-distance",
                  "state_class": "measurement",
                  "unit_of_measurement": "nm",
-                 "uniq_id": "adsbx_max_range_tmp",
-                 "state_topic": "adsbexchange/max_range",
+                 "uniq_id": "fr24tmp_max_range",
+                 "state_topic": "flightradar24/max_range",
                  "device": DEVICE},
           }
     return sensors
@@ -108,7 +76,7 @@ def mqtt_publish(msgs):
             auth = {'username':CONFIG["mqtt_user"], 'password':CONFIG["mqtt_pass"]}
         else:
             auth = None
-        publish.multiple(msgs, hostname=CONFIG["mqtt_host"], port=CONFIG["mqtt_port"], client_id="adsb_mqtt-sensors", auth=auth)
+        publish.multiple(msgs, hostname=CONFIG["mqtt_host"], port=CONFIG["mqtt_port"], client_id="adsb_mqtt_fr24", auth=auth)
     except MQTTException as e:
         _LOGGER.error("Failed sending messages to MQTT broker: {}".format(e))
         exit(0)
@@ -117,47 +85,35 @@ def mqtt_publish(msgs):
         exit(0)
 
 
-def get_adsbx_status():
-    url =  'http://' + CONFIG['adsb_feed'] + '/status.json'
+def get_fr24_monitor():
+    url =  'http://' + CONFIG['adsb_feed'] + '/monitor.json'
     with urlopen(url) as response:
         try:
-            _LOGGER.info("Getting ADS-B Exchange feeder statistics ...")
+            _LOGGER.info("Getting Flightradar24 feeder statistics ...")
             data = json.loads(response.read())
         except json.decoder.JSONDecodeError:
-            _LOGGER.warning("No ADS-B Exchange feeder statistics found...")
+            _LOGGER.warning("No Flightradar24 feeder statistics found...")
             return None
 
-    return {"uptime": data["uptime"],
-            "feed_num_ac_adsb_icao": data["aircraft_count_by_type"]["adsb_icao"],
-            "feed_num_ac_mode_s": data["aircraft_count_by_type"]["mode_s"],
-            "feed_num_ac_mlat": data["aircraft_count_by_type"]["mlat"],
-            "feed_num_ac_with_pos": data["aircraft_with_pos"],
-            "feed_num_ac_without_pos": data["aircraft_without_pos"],
-           }
+    return {"feed_status": data["feed_status"],
+            "feed_num_ac_tracked": data["feed_num_ac_tracked"],
+            "feed_num_ac_adsb_tracked": data["feed_num_ac_adsb_tracked"],
+            "feed_num_ac_non_adsb_tracked": data["feed_num_ac_non_adsb_tracked"]}
 
 
-def get_adsbx_aircraft():
-    url =  'http://' + CONFIG['adsb_feed'] + '/aircraft.json'
+def get_fr24_aircraft():
+    url =  'http://' + CONFIG['adsb_feed'] + '/flights.json'
     with urlopen(url) as response:
         try:
-            _LOGGER.info("Getting ADS-B Exchange flights information ...")
+            _LOGGER.info("Getting Flightradar24 flights information ...")
             data = json.loads(response.read())
         except json.decoder.JSONDecodeError:
-            _LOGGER.warning("No ADS-B Exchange flights information found.")
+            _LOGGER.warning("No Flightradar24 flights information found.")
             return None
-    return data['aircraft']
+    return data
 
 
-def format_uptime(uptime):
-    if uptime:
-        s = timedelta(seconds=float(uptime))
-        d = datetime(1,1,1) + s
-        return("%dd %02dh %02dm %02ds" % (d.day-1, d.hour, d.minute, d.second))
-    else:
-        return("%dd %02dh %02dm %02ds" % (0, 0, 0, 0))
-
-
-def get_adsbx_max_range(aircraft):
+def get_fr24_max_range(aircraft):
 
     def distance(lat1,lon1,lat2,lon2):
         dlon = lon2 - lon1
@@ -173,11 +129,11 @@ def get_adsbx_max_range(aircraft):
 
     dist = {}
 
-    for values in aircraft:
-        icao=values.get('hex')
-        lat=values.get('lat')
-        lon=values.get('lon')
-        if (lat is not None) and (lon is not None):
+    for key in aircraft:
+        icao=aircraft[key][0]
+        lat=aircraft[key][1]
+        lon=aircraft[key][2]
+        if (lat != 0.) and (lon != 0.):
             lat=radians(float(lat))
             lon=radians(float(lon))
             dist[icao] = distance(ulat,ulon,lat,lon) * R
@@ -193,15 +149,13 @@ def get_adsbx_max_range(aircraft):
 def fill_cache(aircraft):
     global ac_cache
     today = datetime.today().day
-    _LOGGER.info("Updating db cache ...")
     for ac in aircraft:
-        icao=ac.get('hex')
-        if is_int16(icao):
-            generator = ( x for x in ac_cache if x['icao'] == icao and datetime.fromtimestamp(int(x["epoch"])).day == today )
-            found = list(generator)
-            if not found:
-                epoch=datetime.now().timestamp()
-                ac_cache.append({ "icao": icao , "epoch": epoch })
+        icao=aircraft[ac][0]
+        generator = ( x for x in ac_cache if x['icao'] == icao and datetime.fromtimestamp(int(x["epoch"])).day == today )
+        found = list(generator)
+        if not found:
+            epoch=datetime.now().timestamp()
+            ac_cache.append({ "icao": icao , "epoch": epoch })
 
 def purge_cache():
     global ac_cache
@@ -280,14 +234,6 @@ def get_ctry_markdown(baseurl,timeslot,sorted_ctry,top=10):
     return msgs
 
 
-def is_int16(string):
-    try:
-        int(string,16)
-        return True
-    except ValueError:
-        return False
-
-
 def is_float(string):
     try:
         float(string)
@@ -304,8 +250,16 @@ def passed_midnight(delta=31):
 
 async def main():
 
-    logging.basicConfig(stream=sys.stdout, filemode='w',format='[adsbx-mqtt-sensors] %(asctime)s | %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
-    #logging.basicConfig(filename='adsbx-mqtt-sensors.log', filemode='w',format='[adsbx-mqtt-sensors] %(asctime)s | %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
+    logging.basicConfig(stream=sys.stdout, filemode='w', format='[fr24-mqtt-sensors] %(asctime)s | %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
+    #logging.basicConfig(filename='fr24-mqtt-sensors.log', filemode='w', format='[fr24-mqtt-sensors] %(asctime)s | %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
+
+    try:
+        f = open('/data/options.json')
+        cfg = json.load(f)
+        f.close()
+    except FileNotFoundError:
+        _LOGGER.error("/data/options.json not found.")
+        exit(0)
 
     try:
         f = open('/data/options.json')
@@ -364,42 +318,37 @@ async def main():
 
         msgs = []
 
-        values = get_adsbx_status()
+        values = get_fr24_monitor()
 
         if values != None:
-            msgs.append({'topic': "adsbexchange/uptime", 'payload': format_uptime(values['uptime']), 'retain': False})
-            feed_num_ac_tracked = values["feed_num_ac_adsb_icao"]+values["feed_num_ac_mode_s"]+values["feed_num_ac_mlat"]
-            msgs.append({'topic': "adsbexchange/ac_total", 'payload': feed_num_ac_tracked, 'retain': False})
-            msgs.append({'topic': "adsbexchange/ac_adsb_icao", 'payload': values['feed_num_ac_adsb_icao'], 'retain': False})
-            msgs.append({'topic': "adsbexchange/ac_modes", 'payload': values['feed_num_ac_mode_s'], 'retain': False})
-            msgs.append({'topic': "adsbexchange/ac_mlat", 'payload': values['feed_num_ac_mlat'], 'retain': False})
-            msgs.append({'topic': "adsbexchange/ac_w_position", 'payload': values['feed_num_ac_with_pos'], 'retain': False})
-            msgs.append({'topic': "adsbexchange/ac_wo_position", 'payload': values['feed_num_ac_without_pos'], 'retain': False})
+            msgs.append({'topic': "flightradar24/feed", 'payload': values['feed_status'], 'retain': False})
+            msgs.append({'topic': "flightradar24/ac_total", 'payload': values['feed_num_ac_tracked'], 'retain': False})
+            msgs.append({'topic': "flightradar24/ac_adsb", 'payload': values['feed_num_ac_adsb_tracked'], 'retain': False})
+            msgs.append({'topic': "flightradar24/ac_non_adsb", 'payload': values['feed_num_ac_non_adsb_tracked'], 'retain': False})
 
-
-        if compute_max_range or compute_ranking: aircraft = get_adsbx_aircraft()
+        if compute_max_range or compute_ranking: aircraft = get_fr24_aircraft()
 
         if compute_max_range:
             _LOGGER.info("Computing aircraft max range ...")
-            max_range = get_adsbx_max_range(aircraft)
+            max_range = get_fr24_max_range(aircraft)
         else:
             max_range = 0
-        msgs.append({'topic': "adsbexchange/max_range", 'payload': max_range, 'retain': False})
+        msgs.append({'topic': "flightradar24/max_range", 'payload': max_range, 'retain': False})
 
         if compute_ranking:
             if passed_midnight():
                 _LOGGER.info("Publishing yesterday countries synopsis ...")
                 yesterday_sorted_ctry = get_country_rank("yesterday")
-                msgs.extend(get_ctry_markdown("adsbexchange/countries","yesterday",yesterday_sorted_ctry))
+                msgs.extend(get_ctry_markdown("flightradar24/countries","yesterday",yesterday_sorted_ctry))
                 _LOGGER.info("Purging db cache ...")
                 purge_cache()
             fill_cache(aircraft)
             _LOGGER.info("Computing aircraft countries ranking ...")
             sorted_ctry = get_country_rank("today")
-            msgs.extend(get_ctry_markdown("adsbexchange/countries","today",sorted_ctry))
+            msgs.extend(get_ctry_markdown("flightradar24/countries","today",sorted_ctry))
 
         if msgs:
-            _LOGGER.info("Updating HA MQTT sensors value ...")
+            _LOGGER.info("Sending HA MQTT sensors value ...")
             mqtt_publish(msgs)
 
         _LOGGER.info("Sleeping 30 seconds ...")
@@ -408,4 +357,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
