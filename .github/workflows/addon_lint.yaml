@@ -32,4 +32,4 @@ jobs:
       - name: 🔎 Run Home Assistant Add-on Lint
         uses: frenck/action-addon-linter@v2
         with:
-           path: "**/adsb-multi-portal-mqtt-sensors-fr24/config.*"
+           path: "./homeassistant-addons/adsb-multi-portal-mqtt-sensors-fr24/"
