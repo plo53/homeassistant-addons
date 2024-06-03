@@ -2,8 +2,8 @@
 
 ## ADS-B MQTT auto discovery sensors
 
-- [x] adsb.fi :white_check_mark:
-- [x] ADS-B Exchange :white_check_mark:
-- [x] FlightRadar24 :white_check_mark:
-- [ ] OpenSky
+- [x] adsb.fi :warning: (needs feeder feature update)
+- [x] ADS-B Exchange :warning: (needs feeder feature update)
+- [x] FlightRadar24 :heavy_check_mark:
+- [ ] OpenSky :pr
 - [ ] PlaneFinder
