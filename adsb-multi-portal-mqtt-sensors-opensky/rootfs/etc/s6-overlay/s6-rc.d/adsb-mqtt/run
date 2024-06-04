@@ -1,0 +1,9 @@
+#!/command/with-contenv bashio
+# shellcheck shell=bash
+# ==============================================================================
+# Start ha adsb mqtt service
+# ==============================================================================
+
+set -eo pipefail
+
+/usr/local/share/adsb-mqtt-sensors/opensky 2>&1
