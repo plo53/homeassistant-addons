@@ -348,7 +348,7 @@ async def main():
             msgs.extend(get_ctry_markdown("flightradar24/countries","today",sorted_ctry))
 
         if msgs:
-            _LOGGER.info("Sending HA MQTT sensors value ...")
+            _LOGGER.info("Publishing HA MQTT sensors value ...")
             mqtt_publish(msgs)
 
         _LOGGER.info("Sleeping 30 seconds ...")
