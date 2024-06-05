@@ -5,5 +5,5 @@
 - [x] adsb.fi :warning: (needs feeder feature update)
 - [x] ADS-B Exchange :warning: (needs feeder feature update)
 - [x] FlightRadar24 :heavy_check_mark:
-- [ ] OpenSky
+- [x] OpenSky :heavy_check_mark:
 - [ ] PlaneFinder

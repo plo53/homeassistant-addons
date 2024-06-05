@@ -261,14 +261,6 @@ async def main():
         _LOGGER.error("/data/options.json not found.")
         exit(0)
 
-    try:
-        f = open('/data/options.json')
-        cfg = json.load(f)
-        f.close()
-    except FileNotFoundError:
-        _LOGGER.error("/data/options.json not found.")
-        exit(0)
-
     CONFIG['adsb_feed'] = cfg['ADSB_FEEDER_URL'] if "ADSB_FEEDER_URL" in cfg else "f1c878cb-adsb-multi-portal-feeder:8888"
     CONFIG['mqtt_host'] = cfg['MQTT_HOST'] if "MQTT_HOST" in cfg else "homeassistant"
     CONFIG['mqtt_port'] = cfg['MQTT_PORT'] if "MQTT_PORT" in os.environ else 1883
