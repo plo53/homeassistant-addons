@@ -118,8 +118,6 @@ def mqtt_publish(msgs):
 
 
 def get_adsbfi_status():
-    #url =  'file:///run/adsbfi-feed/status.json'
-    #url = 'http://f1c878cb-adsb-multi-portal-feeder:8889/status.json'
     url =  'http://' + CONFIG['adsb_feed'] + '/status.json'
     with urlopen(url) as response:
         try:
@@ -139,8 +137,6 @@ def get_adsbfi_status():
 
 
 def get_adsbfi_aircraft():
-    #url =  'file:///run/adsbexchange-feed/aircraft.json'
-    #url = 'http://f1c878cb-adsb-multi-portal-feeder:8889/aircraft.json'
     url =  'http://' + CONFIG['adsb_feed'] + '/aircraft.json'
     with urlopen(url) as response:
         try:
@@ -197,7 +193,6 @@ def get_adsbfi_max_range(aircraft):
 def fill_cache(aircraft):
     global ac_cache
     today = datetime.today().day
-    _LOGGER.info("Updating db cache ...")
     for ac in aircraft:
         icao=ac.get('hex')
         if is_int16(icao):
@@ -404,7 +399,7 @@ async def main():
             msgs.extend(get_ctry_markdown("adsbfi/countries","today",sorted_ctry))
 
         if msgs:
-            _LOGGER.info("Updating HA MQTT sensors value ...")
+            _LOGGER.info("Publishing HA MQTT sensors value ...")
             mqtt_publish(msgs)
 
         _LOGGER.info("Sleeping 30 seconds ...")
