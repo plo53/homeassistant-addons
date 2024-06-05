@@ -1,11 +1,11 @@
-slug: adsb-multi-portal-mqtt-sensors-opensky
+slug: adsb-multi-portal-mqtt-sensors-planefinder
 url: https://github.com/plo53/homeassistant-addons/
-image: ghcr.io/plo53/homeassistant-adsb-multi-portal-mqtt-sensors-opensky-{arch}
+image: ghcr.io/plo53/homeassistant-adsb-multi-portal-mqtt-sensors-planefinder-{arch}
 version: 1.0.0
 hassio_api: true
 homeassistant_api: true
-name: ADS-B Multi-Portal MQTT Sensors (opensky)
-description: ADS-B MQTT sensors for OpenSky feeder
+name: ADS-B Multi-Portal MQTT Sensors (planefinder)
+description: ADS-B MQTT sensors for PlaneFinder feeder
 arch:
   - armv7
   - aarch64
