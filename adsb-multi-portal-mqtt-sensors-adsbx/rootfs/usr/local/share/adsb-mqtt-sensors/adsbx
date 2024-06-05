@@ -193,7 +193,6 @@ def get_adsbx_max_range(aircraft):
 def fill_cache(aircraft):
     global ac_cache
     today = datetime.today().day
-    _LOGGER.info("Updating db cache ...")
     for ac in aircraft:
         icao=ac.get('hex')
         if is_int16(icao):
@@ -399,7 +398,7 @@ async def main():
             msgs.extend(get_ctry_markdown("adsbexchange/countries","today",sorted_ctry))
 
         if msgs:
-            _LOGGER.info("Updating HA MQTT sensors value ...")
+            _LOGGER.info("Publishing HA MQTT sensors value ...")
             mqtt_publish(msgs)
 
         _LOGGER.info("Sleeping 30 seconds ...")
