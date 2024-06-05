@@ -8,3 +8,5 @@
 
 ###
 ![aircrafts](https://raw.githubusercontent.com/plo53/homeassistant-addons/main/adsb-multi-portal-mqtt-sensors-opensky/media/opensky_sensors.png)
+
+[//]: # (Country ranking picture missing)
