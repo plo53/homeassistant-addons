@@ -1,0 +1,32 @@
+slug: adsb-multi-portal-mqtt-sensors-opensky
+url: https://github.com/plo53/homeassistant-addons/
+image: ghcr.io/plo53/homeassistant-adsb-multi-portal-mqtt-sensors-opensky-{arch}
+version: 1.0.0
+hassio_api: true
+homeassistant_api: true
+name: ADS-B Multi-Portal MQTT Sensors (opensky)
+description: ADS-B MQTT sensors for OpenSky feeder
+arch:
+  - armv7
+  - aarch64
+  - amd64
+init: false
+map:
+  - data
+options:
+  ADSB_FEEDER_URL: "f1c878cb-adsb-multi-portal-feeder:30053"
+  MLAT_EXACT_LAT: ""
+  MLAT_EXACT_LON: ""
+  MQTT_HOST: "homeassistant"
+  MQTT_PORT: 1883
+  MQTT_USER: ""
+  MQTT_PASS: ""
+schema:
+  # Exact coordinates for MLAT
+  ADSB_FEEDER_URL: str
+  MLAT_EXACT_LAT: match([+-]?(([1-9][0-9]*)|(0))([.,][0-9]+)?|HOMEASSISTANT_LATITUDE)?
+  MLAT_EXACT_LON: match([+-]?(([1-9][0-9]*)|(0))([.,][0-9]+)?|HOMEASSISTANT_LONGITUDE)?
+  MQTT_HOST: str
+  MQTT_PORT: int?
+  MQTT_USER: str
+  MQTT_PASS: str

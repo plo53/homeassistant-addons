@@ -5,3 +5,4 @@ adsb-multi-portal-mqtt-sensors-adsbfi: adsb-multi-portal-mqtt-sensors-adsbfi/con
 adsb-multi-portal-mqtt-sensors-adsbx: adsb-multi-portal-mqtt-sensors-adsbx/config.* # Image : yes
 adsb-multi-portal-mqtt-sensors-fr24: adsb-multi-portal-mqtt-sensors-fr24/config.* # Image : yes
 adsb-multi-portal-mqtt-sensors-opensky: adsb-multi-portal-mqtt-sensors-opensky/config.* # Image : yes
+adsb-multi-portal-mqtt-sensors-planefinder: adsb-multi-portal-mqtt-sensors-planefinder/config.* # Image : yes
