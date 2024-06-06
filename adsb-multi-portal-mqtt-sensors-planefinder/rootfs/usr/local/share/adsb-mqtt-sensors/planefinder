@@ -344,7 +344,7 @@ async def main():
 
             msgs = []
             for k,v in SENSORS.items():
-                msgs.append({'topic': f'homeassistant/sensor/{v["state_topic"]}/config', 'payload': json.dumps(v), 'retain': True})
+                msgs.append({'topic': f'homeassistant/sensor/{v["state_topic"]}/config', 'payload': json.dumps(v), 'retain': False})
             _LOGGER.info("Setting HA MQTT discovery configuration ...")
             mqtt_publish(msgs)
             await asyncio.sleep(1)
