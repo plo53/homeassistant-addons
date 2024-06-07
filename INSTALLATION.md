@@ -15,4 +15,4 @@
 
 ***Install relevant feeder(s)***
 
-![feeders](https://raw.githubusercontent.com/plo53/homeassistant-addons/main/media/repository-feeders.png)
+![feeders](https://raw.githubusercontent.com/plo53/homeassistant-addons/main/media/repository_feeders.png)
