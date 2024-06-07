@@ -1,9 +1,9 @@
 
 ## Pre-requisites
 
-***MQTT Broker
+***MQTT Broker***
 
-***MQTT Integration
+***HA MQTT Integration***
 
 ## Installation Steps
 
