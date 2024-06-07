@@ -284,8 +284,8 @@ def passed_midnight(delta=31):
 
 async def main():
 
-    #logging.basicConfig(filename='pf-mqtt-sensors.log', filemode='w', format='[pf-mqtt-sensors] %(asctime)s | %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
-    logging.basicConfig(stream=sys.stdout, format='[planefinder-mqtt-sensors] %(asctime)s | %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
+    logging.basicConfig(filename='/tmp/pf-mqtt-sensors.log', filemode='w', format='[pf-mqtt-sensors] %(asctime)s | %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
+    #logging.basicConfig(stream=sys.stdout, format='[planefinder-mqtt-sensors] %(asctime)s | %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
  
     try:
         f = open('/data/options.json')
@@ -344,7 +344,7 @@ async def main():
 
             msgs = []
             for k,v in SENSORS.items():
-                msgs.append({'topic': f'homeassistant/sensor/{v["state_topic"]}/config', 'payload': json.dumps(v), 'retain': True})
+                msgs.append({'topic': f'homeassistant/sensor/{v["state_topic"]}/config', 'payload': json.dumps(v), 'retain': False})
             _LOGGER.info("Setting HA MQTT discovery configuration ...")
             mqtt_publish(msgs)
             await asyncio.sleep(1)
