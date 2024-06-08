@@ -1,3 +1,4 @@
+# INSTALLATION
 
 ## Pre-requisites
 
@@ -15,6 +16,6 @@
 
 ***Install relevant feeder(s)***
 
-*Settings &rarr; Add-ons &rarr; Add-on Store &rarr; Repository*
+*Settings &rarr; Add-ons &rarr; Add-on Store*
 
 ![feeders](https://raw.githubusercontent.com/plo53/homeassistant-addons/main/media/repository_feeders.png)
