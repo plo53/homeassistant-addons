@@ -264,7 +264,7 @@ def get_ctry_markdown(baseurl,timeslot,sorted_ctry,top=10):
     stats += f"|Aircraft tracked| _{ac_tracked}_   |\n"
     stats += f"|Country tracked | _{ctry_tracked}_ |\n"
     payload={'state': 'On', 'attributes': headers+ranking13+ranking47+stats }
-    msgs.append({'topic': f'{baseurl}/{timeslot}/markdown', 'payload': json.dumps(payload), 'retain': False})
+    msgs.append({'topic': f'{baseurl}/{timeslot}/markdown', 'payload': json.dumps(payload), 'retain': True})
     return msgs
 
 
@@ -346,14 +346,14 @@ async def main():
         if first:
             msgs = []
             for k,v in SENSORS.items():
-                msgs.append({'topic': f'homeassistant/sensor/{v["state_topic"]}/config', 'payload': '', 'retain': False})
+                msgs.append({'topic': f'homeassistant/sensor/{v["state_topic"]}/config', 'payload': '', 'retain': True})
             _LOGGER.info("Clearing HA MQTT discovery configuration ...")
             mqtt_publish(msgs)
             await asyncio.sleep(1)
 
             msgs = []
             for k,v in SENSORS.items():
-                msgs.append({'topic': f'homeassistant/sensor/{v["state_topic"]}/config', 'payload': json.dumps(v), 'retain': False})
+                msgs.append({'topic': f'homeassistant/sensor/{v["state_topic"]}/config', 'payload': json.dumps(v), 'retain': True})
             _LOGGER.info("Setting HA MQTT discovery configuration ...")
             mqtt_publish(msgs)
             await asyncio.sleep(1)
@@ -367,9 +367,9 @@ async def main():
         if values == None: continue                                   
 
         float2f = "%.2f" % round(values['receiver_bytes_in_kps'], 2)
-        msgs.append({'topic': "planefinder/bandwidth", 'payload': float2f, 'retain': False})
-        msgs.append({'topic': "planefinder/mode_s_rate", 'payload': values['receiver_modes_packets_ps'], 'retain': False})
-        msgs.append({'topic': "planefinder/mode_ac_rate", 'payload': values['receiver_modeac_packets_ps'], 'retain': False})
+        msgs.append({'topic': "planefinder/bandwidth", 'payload': float2f, 'retain': True})
+        msgs.append({'topic': "planefinder/mode_s_rate", 'payload': values['receiver_modes_packets_ps'], 'retain': True})
+        msgs.append({'topic': "planefinder/mode_ac_rate", 'payload': values['receiver_modeac_packets_ps'], 'retain': True})
 
         aircraft = get_pf_aircraft()
 
@@ -378,16 +378,16 @@ async def main():
         values = get_pf_adsb_types(aircraft)
 
         if values != None:
-            msgs.append({'topic': "planefinder/ac_total", 'payload': values['feed_num_ac_tracked'], 'retain': False})
-            msgs.append({'topic': "planefinder/ac_adsb", 'payload': values['feed_num_ac_adsb'], 'retain': False})
-            msgs.append({'topic': "planefinder/ac_mlat", 'payload': values['feed_num_ac_mlat'], 'retain': False})
+            msgs.append({'topic': "planefinder/ac_total", 'payload': values['feed_num_ac_tracked'], 'retain': True})
+            msgs.append({'topic': "planefinder/ac_adsb", 'payload': values['feed_num_ac_adsb'], 'retain': True})
+            msgs.append({'topic': "planefinder/ac_mlat", 'payload': values['feed_num_ac_mlat'], 'retain': True})
 
         if compute_max_range:
             _LOGGER.info("Computing aircraft max range ...")
             max_range = get_pf_max_range(aircraft)
         else:
             max_range = 0
-        msgs.append({'topic': "planefinder/max_range", 'payload': max_range, 'retain': False})
+        msgs.append({'topic': "planefinder/max_range", 'payload': max_range, 'retain': True})
 
         if compute_ranking:
             if passed_midnight():
