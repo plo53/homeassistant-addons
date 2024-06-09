@@ -230,7 +230,7 @@ def get_ctry_markdown(baseurl,timeslot,sorted_ctry,top=10):
     stats += f"|Aircraft tracked| _{ac_tracked}_   |\n"
     stats += f"|Country tracked | _{ctry_tracked}_ |\n"
     payload={'state': 'On', 'attributes': headers+ranking13+ranking47+stats }
-    msgs.append({'topic': f'{baseurl}/{timeslot}/markdown', 'payload': json.dumps(payload), 'retain': False})
+    msgs.append({'topic': f'{baseurl}/{timeslot}/markdown', 'payload': json.dumps(payload), 'retain': True})
     return msgs
 
 
@@ -294,7 +294,7 @@ async def main():
         if first:
             msgs = []
             for k,v in SENSORS.items():
-                msgs.append({'topic': f'homeassistant/sensor/{v["state_topic"]}/config', 'payload': '', 'retain': False})
+                msgs.append({'topic': f'homeassistant/sensor/{v["state_topic"]}/config', 'payload': '', 'retain': True})
             _LOGGER.info("Clearing HA MQTT discovery configuration ...")
             mqtt_publish(msgs)
             await asyncio.sleep(1)
@@ -313,10 +313,10 @@ async def main():
         values = get_fr24_monitor()
 
         if values != None:
-            msgs.append({'topic': "flightradar24/feed", 'payload': values['feed_status'], 'retain': False})
-            msgs.append({'topic': "flightradar24/ac_total", 'payload': values['feed_num_ac_tracked'], 'retain': False})
-            msgs.append({'topic': "flightradar24/ac_adsb", 'payload': values['feed_num_ac_adsb_tracked'], 'retain': False})
-            msgs.append({'topic': "flightradar24/ac_non_adsb", 'payload': values['feed_num_ac_non_adsb_tracked'], 'retain': False})
+            msgs.append({'topic': "flightradar24/feed", 'payload': values['feed_status'], 'retain': True})
+            msgs.append({'topic': "flightradar24/ac_total", 'payload': values['feed_num_ac_tracked'], 'retain': True})
+            msgs.append({'topic': "flightradar24/ac_adsb", 'payload': values['feed_num_ac_adsb_tracked'], 'retain': True})
+            msgs.append({'topic': "flightradar24/ac_non_adsb", 'payload': values['feed_num_ac_non_adsb_tracked'], 'retain': True})
 
         if compute_max_range or compute_ranking: aircraft = get_fr24_aircraft()
 
@@ -325,7 +325,7 @@ async def main():
             max_range = get_fr24_max_range(aircraft)
         else:
             max_range = 0
-        msgs.append({'topic': "flightradar24/max_range", 'payload': max_range, 'retain': False})
+        msgs.append({'topic': "flightradar24/max_range", 'payload': max_range, 'retain': True})
 
         if compute_ranking:
             if passed_midnight():
