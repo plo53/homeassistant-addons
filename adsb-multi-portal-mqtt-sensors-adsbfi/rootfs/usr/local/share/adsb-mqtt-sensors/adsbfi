@@ -304,8 +304,17 @@ def passed_midnight(delta=31):
 
 async def main():
 
-    logging.basicConfig(stream=sys.stdout, filemode='w',format='[adsbfi-mqtt-sensors] %(asctime)s | %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
-    #logging.basicConfig(filename='adsbfi-mqtt-sensors.log', filemode='w',format='[adsbfi-mqtt-sensors] %(asctime)s | %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
+    #logging.basicConfig(stream=sys.stdout, filemode='w',format='[adsbfi-mqtt-sensors] %(asctime)s | %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
+    #logging.basicConfig(filename='/tmp/adsbfi-mqtt-sensors.log', filemode='w',format='[adsbfi-mqtt-sensors] %(asctime)s | %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
+
+    file_handler = logging.FileHandler(filename='/tmp/adsbfi-mqtt-sensors.log')
+    stdout_handler = logging.StreamHandler(stream=sys.stdout)
+    handlers = [file_handler, stdout_handler]
+
+    logging.basicConfig(
+        format='[adsbfi-mqtt-sensors] %(asctime)s | %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO,
+        handlers=handlers
+    )
 
     try:
         f = open('/data/options.json')
@@ -348,7 +357,7 @@ async def main():
         if first:
             msgs = []
             for k,v in SENSORS.items():
-                msgs.append({'topic': f'homeassistant/sensor/{v["state_topic"]}/config', 'payload': '', 'retain': False})
+                msgs.append({'topic': f'homeassistant/sensor/{v["state_topic"]}/config', 'payload': '', 'retain': True})
             _LOGGER.info("Clearing HA MQTT discovery configuration ...")
             mqtt_publish(msgs)
             await asyncio.sleep(1)
@@ -367,14 +376,14 @@ async def main():
         values = get_adsbfi_status()
 
         if values != None:
-            msgs.append({'topic': "adsbfi/uptime", 'payload': format_uptime(values['uptime']), 'retain': False})
+            msgs.append({'topic': "adsbfi/uptime", 'payload': format_uptime(values['uptime']), 'retain': True})
             feed_num_ac_tracked = values["feed_num_ac_adsb_icao"]+values["feed_num_ac_mode_s"]+values["feed_num_ac_mlat"]
-            msgs.append({'topic': "adsbfi/ac_total", 'payload': feed_num_ac_tracked, 'retain': False})
-            msgs.append({'topic': "adsbfi/ac_adsb_icao", 'payload': values['feed_num_ac_adsb_icao'], 'retain': False})
-            msgs.append({'topic': "adsbfi/ac_modes", 'payload': values['feed_num_ac_mode_s'], 'retain': False})
-            msgs.append({'topic': "adsbfi/ac_mlat", 'payload': values['feed_num_ac_mlat'], 'retain': False})
-            msgs.append({'topic': "adsbfi/ac_w_position", 'payload': values['feed_num_ac_with_pos'], 'retain': False})
-            msgs.append({'topic': "adsbfi/ac_wo_position", 'payload': values['feed_num_ac_without_pos'], 'retain': False})
+            msgs.append({'topic': "adsbfi/ac_total", 'payload': feed_num_ac_tracked, 'retain': True})
+            msgs.append({'topic': "adsbfi/ac_adsb_icao", 'payload': values['feed_num_ac_adsb_icao'], 'retain': True})
+            msgs.append({'topic': "adsbfi/ac_modes", 'payload': values['feed_num_ac_mode_s'], 'retain': True})
+            msgs.append({'topic': "adsbfi/ac_mlat", 'payload': values['feed_num_ac_mlat'], 'retain': True})
+            msgs.append({'topic': "adsbfi/ac_w_position", 'payload': values['feed_num_ac_with_pos'], 'retain': True})
+            msgs.append({'topic': "adsbfi/ac_wo_position", 'payload': values['feed_num_ac_without_pos'], 'retain': True})
 
 
         if compute_max_range or compute_ranking: aircraft = get_adsbfi_aircraft()
@@ -384,7 +393,7 @@ async def main():
             max_range = get_adsbfi_max_range(aircraft)
         else:
             max_range = 0
-        msgs.append({'topic': "adsbfi/max_range", 'payload': max_range, 'retain': False})
+        msgs.append({'topic': "adsbfi/max_range", 'payload': max_range, 'retain': True})
 
         if compute_ranking:
             if passed_midnight():
