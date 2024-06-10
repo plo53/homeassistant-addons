@@ -277,9 +277,18 @@ def passed_midnight(delta=31):
 
 async def main():
 
-    #logging.basicConfig(filename='opensky-mqtt-sensors.log', filemode='w', format='[opensky-mqtt-sensors] %(asctime)s | %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)  
-    logging.basicConfig(stream=sys.stdout, format='[opensky-mqtt-sensors] %(asctime)s | %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
- 
+    #logging.basicConfig(filename='/tmp/opensky-mqtt-sensors.log', filemode='w', format='[opensky-mqtt-sensors] %(asctime)s | %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)  
+    #logging.basicConfig(stream=sys.stdout, format='[opensky-mqtt-sensors] %(asctime)s | %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
+
+    file_handler = logging.FileHandler(filename='/tmp/opensky-mqtt-sensors.log')
+    stdout_handler = logging.StreamHandler(stream=sys.stdout)
+    handlers = [file_handler, stdout_handler]
+
+    logging.basicConfig(
+        format='[opensky-mqtt-sensors] %(asctime)s | %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO,
+        handlers=handlers
+    )
+
     try:
         f = open('/data/options.json')
         cfg = json.load(f)
@@ -330,7 +339,7 @@ async def main():
         if first:
             msgs = []
             for k,v in SENSORS.items():
-                msgs.append({'topic': f'homeassistant/sensor/{v["state_topic"]}/config', 'payload': '', 'retain': False})
+                msgs.append({'topic': f'homeassistant/sensor/{v["state_topic"]}/config', 'payload': '', 'retain': True})
             _LOGGER.info("Clearing HA MQTT discovery configuration ...")
             mqtt_publish(msgs)
             await asyncio.sleep(1)
@@ -350,8 +359,8 @@ async def main():
 
         if values == None: continue
 
-        msgs.append({'topic': "opensky/ac_mode_s_rate", 'payload': values['receiver_modes_rate'], 'retain': False})
-        msgs.append({'topic': "opensky/ac_mode_ac_rate", 'payload': values['receiver_modeac_rate'], 'retain': False})
+        msgs.append({'topic': "opensky/ac_mode_s_rate", 'payload': values['receiver_modes_rate'], 'retain': True})
+        msgs.append({'topic': "opensky/ac_mode_ac_rate", 'payload': values['receiver_modeac_rate'], 'retain': True})
 
         aircraft = get_opensky_aircraft()
 
@@ -359,16 +368,16 @@ async def main():
 
         values = get_opensky_adsb_types(aircraft)
 
-        msgs.append({'topic': "opensky/ac_total", 'payload': values['feed_num_ac_tracked'], 'retain': False})
-        msgs.append({'topic': "opensky/ac_adsb", 'payload': values['feed_num_ac_adsb'], 'retain': False})
-        msgs.append({'topic': "opensky/ac_mlat", 'payload': values['feed_num_ac_mlat'], 'retain': False})
+        msgs.append({'topic': "opensky/ac_total", 'payload': values['feed_num_ac_tracked'], 'retain': True})
+        msgs.append({'topic': "opensky/ac_adsb", 'payload': values['feed_num_ac_adsb'], 'retain': True})
+        msgs.append({'topic': "opensky/ac_mlat", 'payload': values['feed_num_ac_mlat'], 'retain': True})
 
         if compute_max_range:
             _LOGGER.info("Computing aircraft max range ...")
             max_range = get_opensky_max_range(aircraft)
         else:
             max_range = 0
-        msgs.append({'topic': "opensky/max_range", 'payload': max_range, 'retain': False})
+        msgs.append({'topic': "opensky/max_range", 'payload': max_range, 'retain': True})
 
         if compute_ranking:
             if passed_midnight():
