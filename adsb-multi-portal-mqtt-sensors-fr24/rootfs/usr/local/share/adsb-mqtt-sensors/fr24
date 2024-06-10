@@ -250,8 +250,17 @@ def passed_midnight(delta=31):
 
 async def main():
 
-    logging.basicConfig(stream=sys.stdout, filemode='w', format='[fr24-mqtt-sensors] %(asctime)s | %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
-    #logging.basicConfig(filename='fr24-mqtt-sensors.log', filemode='w', format='[fr24-mqtt-sensors] %(asctime)s | %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
+    #logging.basicConfig(filename='/tmp/fr24-mqtt-sensors.log', filemode='w', format='[fr24-mqtt-sensors] %(asctime)s | %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
+    #logging.basicConfig(stream=sys.stdout, filemode='w', format='[fr24-mqtt-sensors] %(asctime)s | %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
+ 
+    file_handler = logging.FileHandler(filename='/tmp/fr24-mqtt-sensors.log')
+    stdout_handler = logging.StreamHandler(stream=sys.stdout)
+    handlers = [file_handler, stdout_handler]
+
+    logging.basicConfig(
+        format='[fr24-mqtt-sensors] %(asctime)s | %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO,
+        handlers=handlers
+    )
 
     try:
         f = open('/data/options.json')
